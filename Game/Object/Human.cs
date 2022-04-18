@@ -40,15 +40,15 @@ namespace CSkyL.Game.Object
 
         public Positioning GetPositioning()
         {
-            _instance.GetSmoothPosition(pedestrianID._index,
-                                        out var position, out var rotation);
+            ref var human = ref GetCitizenInstance();
+            human.GetSmoothPosition(_pid, out var position, out var rotation);
             return new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
         }
-        public float GetSpeed() => _instance.GetLastFrameData().m_velocity.magnitude;
+        public float GetSpeed() => GetCitizenInstance().GetLastFrameData().m_velocity.magnitude;
         public string GetStatus()
         {
             var _c = _citizen;
-            var status = _instance.Info.m_citizenAI.GetLocalizedStatus(
+            var status = GetCitizenInstance().Info.m_citizenAI.GetLocalizedStatus(
                                 pedestrianID._index, ref _c, out var implID);
             switch (ObjectID._FromIID(implID)) {
             case BuildingID bid: status += Building.GetName(bid); break;
@@ -77,7 +77,7 @@ namespace CSkyL.Game.Object
 
             return details;
         }
-        public string GetPrefabName() => _instance.Info.name;
+        public string GetPrefabName() => GetCitizenInstance().Info.name;
 
         public static IEnumerable<Pedestrian> GetIf(System.Func<Pedestrian, bool> filter)
         {
@@ -86,8 +86,11 @@ namespace CSkyL.Game.Object
                     .Where(p => p is Pedestrian && filter(p));
         }
 
-        private static CitizenInstance _GetCitizenInstance(PedestrianID pid)
-            => manager.m_instances.m_buffer[pid._index];
+        protected ref CitizenInstance GetCitizenInstance()
+            => ref _GetCitizenInstance(pedestrianID);
+
+        private static ref CitizenInstance _GetCitizenInstance(PedestrianID pid)
+            => ref  manager.m_instances.m_buffer[pid._index];
         private static HumanID _GetHumanID(PedestrianID pid)
             => HumanID._FromIndex(_GetCitizenInstance(pid).m_citizen);
 
@@ -96,13 +99,12 @@ namespace CSkyL.Game.Object
         private Pedestrian(PedestrianID pid, HumanID hid) : base(hid)
         {
             pedestrianID = pid;
-            _instance = _GetCitizenInstance(pedestrianID);
         }
 
-        private bool _Is(CitizenInstance.Flags flags) => (_instance.m_flags & flags) != 0;
+        private bool _Is(CitizenInstance.Flags flags) => (GetCitizenInstance().m_flags & flags) != 0;
 
         public readonly PedestrianID pedestrianID;
-        private readonly CitizenInstance _instance;
+        private ushort _pid => pedestrianID._index;
 
         private static readonly CitizenManager manager = CitizenManager.instance;
     }

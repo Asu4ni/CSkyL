@@ -1,5 +1,6 @@
 ﻿namespace CSkyL.Transform
 {
+    using UnityEngine;
     using Quaternion = UnityEngine.Quaternion;
     using Range = Math.Range;
     using Vector = UnityEngine.Vector3;
@@ -30,6 +31,15 @@
         internal static Position _FromVec(Vector position)
             => new Position { x = position.x, y = position.z, up = position.y };
 
+        public static Position Lerp(Position a, Position b, float t)
+        {
+            return new Position {
+                x = a.x + (b.x - a.x) * t,
+                y = a.y + (b.y - a.y) * t,
+                up = a.up + (b.up - a.up) * t
+            };
+        }
+
         public override string ToString() => $"[x: {x}, y: {y}, u: {up}]";
     }
     public class Displacement
@@ -53,6 +63,17 @@
         internal Vector _AsVec3 => new Vector(x, up, y);
         internal static Displacement _FromVec3(Vector vec)
             => new Displacement { x = vec.x, y = vec.z, up = vec.y };
+        public Angle AsLookingAngle() => Angle._FromQuat(Quaternion.LookRotation(_AsVec3));
+
+        public static Displacement Lerp(Displacement a, Displacement b, float t)
+        {
+            return new Displacement
+            {
+                x = a.x + (b.x - a.x) * t,
+                y = a.y + (b.y - a.y) * t,
+                up = a.up + (b.up - a.up) * t
+            };
+        }
 
         public override string ToString() => $"[x: {x}, y: {y}, u: {up}]";
     }
@@ -138,6 +159,16 @@
 
         private static float _ToYaw(float angle) => angle.Modulus(rangeDegree);
         private static float _ToPitch(float angle) => angle.Clamp(rangePitch);
+
+        public Displacement ToDisplacement(float lenght) =>
+            Displacement._FromVec3(_AsQuat * Vector.forward * lenght);
+
+        public static Angle Lerp(Angle a, Angle b, float t)
+        {
+            return new Angle(
+                yawDegree: Mathf.LerpAngle(a.yawDegree, b.yawDegree, t),
+                pitchDegree: Mathf.LerpAngle(a.pitchDegree, b.pitchDegree, t));
+        }
     }
     public class DeltaAttitude
     {
