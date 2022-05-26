@@ -30,6 +30,15 @@
         internal static Position _FromVec(Vector position)
             => new Position { x = position.x, y = position.z, up = position.y };
 
+        public static Position Lerp(Position a, Position b, float t)
+        {
+            return new Position {
+                x = a.x + (b.x - a.x) * t,
+                y = a.y + (b.y - a.y) * t,
+                up = a.up + (b.up - a.up) * t
+            };
+        }
+
         public override string ToString() => $"[x: {x}, y: {y}, u: {up}]";
     }
     public class Displacement
@@ -131,6 +140,12 @@
             vec.x = vec.x.Modulus(rangeDegree);
             return new Angle(yawDegree: vec.y, pitchDegree: -vec.x);
         }
+
+        public static Angle Look(Displacement d) => _FromQuat(Quaternion.LookRotation(d._AsVec3));
+        public static Angle Lerp(Angle a, Angle b, float t) =>
+            new Angle(
+                yawDegree: UnityEngine.Mathf.Lerp(a.yawDegree, b.yawDegree, t),
+                pitchDegree: UnityEngine.Mathf.Lerp(a.pitchDegree,b.pitchDegree,t));
 
         public override string ToString() => $"( yaw : {yawDegree}°,pitch:{pitchDegree}°)";
         public Angle(float yawDegree, float pitchDegree)

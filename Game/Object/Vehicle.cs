@@ -11,9 +11,11 @@ namespace CSkyL.Game.Object
 
         public Positioning GetPositioning()
         {
-            _vehicle.GetSmoothPosition(_vid._index, out var position, out var rotation);
+            ref var vehicle = ref GetVehicle();
+            vehicle.GetSmoothPosition(_vid._index, out var position, out var rotation);
             return new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
         }
+
         public float GetSpeed() => _vehicle.GetSmoothVelocity(_vid._index).magnitude;
 
         public virtual string GetStatus()
@@ -125,14 +127,17 @@ namespace CSkyL.Game.Object
                 return null;
             }
         }
+
+        protected ref global::Vehicle GetVehicle() => ref _GetVehicle(_vid);
+
         protected Vehicle(VehicleID id) : base(id)
         {
             _vid = id;
             _vehicle = _GetVehicle(id);
         }
 
-        private static global::Vehicle _GetVehicle(VehicleID id)
-            => manager.m_vehicles.m_buffer[id._index];
+        private static ref global::Vehicle _GetVehicle(VehicleID id)
+            => ref manager.m_vehicles.m_buffer[id._index];
         protected bool _Is(global::Vehicle.Flags flags) => (_vehicle.m_flags & flags) != 0;
         protected bool _IsOfService(ItemClass.Service service)
             => _vehicle.Info.GetService() == service;
@@ -144,5 +149,16 @@ namespace CSkyL.Game.Object
         protected global::Vehicle _vehicle;
 
         private static readonly VehicleManager manager = VehicleManager.instance;
+
+        public Position GetTargetPos(int index) =>
+            Position._FromVec(GetVehicle().GetTargetPos(index));
+
+        public uint GetTargetFrame()
+        {
+            ref var vehicle = ref GetVehicle();
+            return vehicle.GetTargetFrame(vehicle.Info, _vid._index);
+        }
+
+        public byte GetLastFrame() => GetVehicle().m_lastFrame;
     }
 }

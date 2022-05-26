@@ -86,8 +86,11 @@ namespace CSkyL.Game.Object
                     .Where(p => p is Pedestrian && filter(p));
         }
 
-        private static CitizenInstance _GetCitizenInstance(PedestrianID pid)
-            => manager.m_instances.m_buffer[pid._index];
+        protected ref CitizenInstance GetCitizenInstance()
+            => ref _GetCitizenInstance(pedestrianID);
+
+        private static ref CitizenInstance _GetCitizenInstance(PedestrianID pid)
+            => ref  manager.m_instances.m_buffer[pid._index];
         private static HumanID _GetHumanID(PedestrianID pid)
             => HumanID._FromIndex(_GetCitizenInstance(pid).m_citizen);
 
@@ -105,5 +108,16 @@ namespace CSkyL.Game.Object
         private readonly CitizenInstance _instance;
 
         private static readonly CitizenManager manager = CitizenManager.instance;
+
+        public Position GetTargetPos(int index) =>
+            Position._FromVec(GetCitizenInstance().m_targetPos);
+
+        public uint GetTargetFrame()
+        {
+            uint i = (uint) (((int) id._index << 4) / 65536);
+            return SimulationManager.instance.m_referenceFrameIndex - i;
+        }
+
+        public byte GetLastFrame() => GetCitizenInstance().m_lastFrame;
     }
 }
