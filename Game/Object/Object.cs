@@ -9,9 +9,8 @@ namespace CSkyL.Game.Object
     }
     public interface IObjectToFollow : IObject
     {
-        Transform.Position GetTargetPos(int index);
-        uint GetTargetFrame();
-        byte GetLastFrame();
+        void SimulationFrame();
+        void RenderOverlay(RenderManager.CameraInfo cameraInfo);
         float GetSpeed();
         Transform.Positioning GetPositioning();
         Utils.Infos GetInfos();

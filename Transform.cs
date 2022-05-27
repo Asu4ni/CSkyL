@@ -62,6 +62,8 @@
         internal Vector _AsVec3 => new Vector(x, up, y);
         internal static Displacement _FromVec3(Vector vec)
             => new Displacement { x = vec.x, y = vec.z, up = vec.y };
+        public Angle AsLookingAngle() => Angle._FromQuat(Quaternion.LookRotation(_AsVec3));
+
 
         public override string ToString() => $"[x: {x}, y: {y}, u: {up}]";
     }
@@ -141,7 +143,6 @@
             return new Angle(yawDegree: vec.y, pitchDegree: -vec.x);
         }
 
-        public static Angle Look(Displacement d) => _FromQuat(Quaternion.LookRotation(d._AsVec3));
         public static Angle Lerp(Angle a, Angle b, float t) =>
             new Angle(
                 yawDegree: UnityEngine.Mathf.Lerp(a.yawDegree, b.yawDegree, t),

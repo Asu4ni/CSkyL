@@ -20,6 +20,11 @@ namespace CSkyL.Game.ID
 
         internal readonly InstanceID _iID;
         protected ObjectID(InstanceID id) { _iID = id; }
+
+        public override bool Equals(object rhs)
+        {
+            return rhs is ObjectID objectID && objectID._iID == this._iID;
+        }
     }
 
     public abstract class BaseID<T> : ObjectID where T : struct, System.IComparable<T>

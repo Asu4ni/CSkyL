@@ -38,17 +38,26 @@ namespace CSkyL.Game.Object
         public bool IsEnteringVehicle => _Is(CitizenInstance.Flags.EnteringVehicle);
         public bool IsHangingAround => _Is(CitizenInstance.Flags.HangAround);
 
+        public uint GetTargetFrame()
+        {
+            uint i = (uint) (((int) id._index << 4) / 65536);
+            return SimulationManager.instance.m_referenceFrameIndex - i;
+        }
+
+        public void SimulationFrame() { }
+        public void RenderOverlay(RenderManager.CameraInfo cameraInfo) { }
+
         public Positioning GetPositioning()
         {
-            _instance.GetSmoothPosition(pedestrianID._index,
+            GetCitizenInstance().GetSmoothPosition(pedestrianID._index,
                                         out var position, out var rotation);
             return new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
         }
-        public float GetSpeed() => _instance.GetLastFrameData().m_velocity.magnitude;
+        public float GetSpeed() => GetCitizenInstance().GetLastFrameData().m_velocity.magnitude;
         public string GetStatus()
         {
             var _c = _citizen;
-            var status = _instance.Info.m_citizenAI.GetLocalizedStatus(
+            var status = GetCitizenInstance().Info.m_citizenAI.GetLocalizedStatus(
                                 pedestrianID._index, ref _c, out var implID);
             switch (ObjectID._FromIID(implID)) {
             case BuildingID bid: status += Building.GetName(bid); break;
@@ -77,7 +86,7 @@ namespace CSkyL.Game.Object
 
             return details;
         }
-        public string GetPrefabName() => _instance.Info.name;
+        public string GetPrefabName() => GetCitizenInstance().Info.name;
 
         public static IEnumerable<Pedestrian> GetIf(System.Func<Pedestrian, bool> filter)
         {
@@ -99,25 +108,12 @@ namespace CSkyL.Game.Object
         private Pedestrian(PedestrianID pid, HumanID hid) : base(hid)
         {
             pedestrianID = pid;
-            _instance = _GetCitizenInstance(pedestrianID);
         }
 
-        private bool _Is(CitizenInstance.Flags flags) => (_instance.m_flags & flags) != 0;
+        private bool _Is(CitizenInstance.Flags flags) => (GetCitizenInstance().m_flags & flags) != 0;
 
         public readonly PedestrianID pedestrianID;
-        private readonly CitizenInstance _instance;
 
         private static readonly CitizenManager manager = CitizenManager.instance;
-
-        public Position GetTargetPos(int index) =>
-            Position._FromVec(GetCitizenInstance().m_targetPos);
-
-        public uint GetTargetFrame()
-        {
-            uint i = (uint) (((int) id._index << 4) / 65536);
-            return SimulationManager.instance.m_referenceFrameIndex - i;
-        }
-
-        public byte GetLastFrame() => GetCitizenInstance().m_lastFrame;
     }
 }
