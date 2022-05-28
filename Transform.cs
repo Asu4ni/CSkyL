@@ -64,6 +64,15 @@
             => new Displacement { x = vec.x, y = vec.z, up = vec.y };
         public Angle AsLookingAngle() => Angle._FromQuat(Quaternion.LookRotation(_AsVec3));
 
+        public static Displacement Lerp(Displacement a, Displacement b, float t)
+        {
+            return new Displacement
+            {
+                x = a.x + (b.x - a.x) * t,
+                y = a.y + (b.y - a.y) * t,
+                up = a.up + (b.up - a.up) * t
+            };
+        }
 
         public override string ToString() => $"[x: {x}, y: {y}, u: {up}]";
     }
@@ -142,11 +151,6 @@
             vec.x = vec.x.Modulus(rangeDegree);
             return new Angle(yawDegree: vec.y, pitchDegree: -vec.x);
         }
-
-        public static Angle Lerp(Angle a, Angle b, float t) =>
-            new Angle(
-                yawDegree: UnityEngine.Mathf.Lerp(a.yawDegree, b.yawDegree, t),
-                pitchDegree: UnityEngine.Mathf.Lerp(a.pitchDegree,b.pitchDegree,t));
 
         public override string ToString() => $"( yaw : {yawDegree}°,pitch:{pitchDegree}°)";
         public Angle(float yawDegree, float pitchDegree)

@@ -5,11 +5,19 @@ namespace CSkyL.Game.Object
     using CSkyL.UI;
     using System.Collections.Generic;
     using System.Linq;
+    using Color = UnityEngine.Color;
+    using Color32 = UnityEngine.Color32;
 
     public abstract class Vehicle : Object<VehicleID>, IObjectToFollow
     {
         public override string Name => manager.GetVehicleName(GetHeadVehicleID()._index);
         #region look ahead
+        private Position _GetFrame(uint simulationFrame)
+        {
+            uint index = simulationFrame >> 4 & 3U;
+            return _frames[index];
+        }
+
         public void SimulationFrame()
         {
             ref var vehicle = ref GetVehicle();
@@ -25,23 +33,26 @@ namespace CSkyL.Game.Object
             for (int i = 0; i < 4; i++) {
                 // target position
                 uint targetF = (uint) (targetFrame - (16 * i));
-                var colorT = new UnityEngine.Color32(255, (byte) (100 + 50 * i), (byte) (64 * i), 255);
+                var colorT = new Color32(255, (byte) (100 + 50 * i), (byte) (64 * i), 255);
                 OverlayUtil.RenderCircle(cameraInfo, _GetFrame(targetF), colorT, hs.x * (1 - .25f * i));
             }
 
             vehicle.GetSmoothPosition(_vid, out var pos, out var rot);
-            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot)); 
-            var lookPos = GetSmoothLookPos();
-            var lookDir = positioning.position.DisplacementTo(lookPos);
-            if (lookDir.Distance > .3f) {
-                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red);
-            }
-            else {
-                lookDir = positioning.angle.ToDisplacement(1f);
-                lookPos = positioning.position.Move(lookDir);
-                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red + UnityEngine.Color.green);
-            }
+            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
+            
+            var lookDir0 = positioning.angle.ToDisplacement(20);
+            var lookPos0 = positioning.position.Move(lookDir0);
+            OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos0, Color.blue);
 
+            var lookPos1 = GetSmoothLookPos();
+            var lookDir1 = positioning.position.DisplacementTo(lookPos1);
+            OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos1, Color.red);
+
+            if (lookDir1.Distance > .3f) {
+                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
+                var lookPos = positioning.position.Move(lookDir);
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, Color.blue + Color.red);
+            }
         }
 
         public Position GetSmoothLookPos()
@@ -53,24 +64,20 @@ namespace CSkyL.Game.Object
             float t = ((targetFrame & 15U) + SimulationManager.instance.m_referenceTimer) * 0.0625f;
             return Position.Lerp(pos1, pos2, t);
         }
-
-        private Position _GetFrame(uint simulationFrame)
-        {
-            uint index = simulationFrame >> 4 & 3U;
-            return _frames[index];
-        }
         #endregion
 
         public Positioning GetPositioning()
         {
             ref var vehicle = ref GetVehicle();
-            vehicle.GetSmoothPosition(_vid, out var pos, out var rot);
-            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
+            vehicle.GetSmoothPosition(_vid, out var pos0, out var rot0);
+            Positioning positioning = new Positioning(Position._FromVec(pos0), Angle._FromQuat(rot0));
             
-            var lookPos = GetSmoothLookPos();
-            var lookDir = positioning.position.DisplacementTo(lookPos);
-            if (lookDir.Distance > .3f) {
-                positioning.angle = Angle.Lerp(positioning.angle, lookDir.AsLookingAngle(), 0.9f);
+            var lookPos1 = GetSmoothLookPos();
+            var lookDir1 = positioning.position.DisplacementTo(lookPos1);
+            if (lookDir1.Distance > .3f) {
+                var lookDir0 = positioning.angle.ToDisplacement(1);
+                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
+                positioning.angle = lookDir.AsLookingAngle();
             }
             return positioning;
         }

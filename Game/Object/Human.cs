@@ -5,6 +5,8 @@ namespace CSkyL.Game.Object
     using CSkyL.UI;
     using System.Collections.Generic;
     using System.Linq;
+    using Color = UnityEngine.Color;
+    using Color32 = UnityEngine.Color32;
 
     public class Human : Object<HumanID>
     {
@@ -39,66 +41,76 @@ namespace CSkyL.Game.Object
         public bool IsEnteringVehicle => _Is(CitizenInstance.Flags.EnteringVehicle);
         public bool IsHangingAround => _Is(CitizenInstance.Flags.HangAround);
 
-        public void SimulationFrame() {
-            ref var citizenInstance = ref GetCitizenInstance();
-            _frames[citizenInstance.m_lastFrame] = Position._FromVec(citizenInstance.m_targetPos);
-        }
-        public void RenderOverlay(RenderManager.CameraInfo cameraInfo) {
-            ref var citizenInstance = ref GetCitizenInstance();
-            uint targetFrame = GetTargetFrame();
-
-            for (int i = 0; i < 4; i++) {
-                // target position
-                uint targetF = (uint) (targetFrame - (16 * i));
-                var colorT = new UnityEngine.Color32(255, (byte) (100 + 50 * i), (byte) (64 * i), 255);
-                OverlayUtil.RenderCircle(cameraInfo, _GetFrame(targetF), colorT, 1.5f * (1 - .25f * i));
-            }
-
-            citizenInstance.GetSmoothPosition(_pid, out var pos, out var rot);
-            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
-            var lookPos = GetSmoothLookPos();
-            var lookDir = positioning.position.DisplacementTo(lookPos);
-            if (lookDir.Distance > .1f) {
-                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red);
-            }
-            else {
-                lookDir = positioning.angle.ToDisplacement(1f);
-                lookPos = positioning.position.Move(lookDir);
-                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red + UnityEngine.Color.green);
-            }
-        }
-
-        public Position GetSmoothLookPos()
-        {
-            ref var citizenInstance = ref GetCitizenInstance();
-            uint targetFrame = GetTargetFrame();
-            Position pos1 = _GetFrame(targetFrame - 1 * 16U);
-            Position pos2 = _GetFrame(targetFrame - 0 * 16U);
-            float t = ((targetFrame & 15U) + SimulationManager.instance.m_referenceTimer) * 0.0625f;
-            return Position.Lerp(pos1, pos2, t);
-        }
-
+        #region look ahead
         public uint GetTargetFrame()
         {
             uint i = (uint) (((int) id._index << 4) / 65536);
             return SimulationManager.instance.m_referenceFrameIndex - i;
         }
+
         private Position _GetFrame(uint simulationFrame)
         {
             uint index = simulationFrame >> 4 & 3U;
             return _frames[index];
         }
 
+        public void SimulationFrame() {
+            ref var human = ref GetCitizenInstance();
+            _frames[human.m_lastFrame] = Position._FromVec(human.m_targetPos);
+        }
+
+        public void RenderOverlay(RenderManager.CameraInfo cameraInfo) {
+            ref var human = ref GetCitizenInstance();
+            uint targetFrame = GetTargetFrame();
+
+            for (int i = 0; i < 4; i++) {
+                // target position
+                uint targetF = (uint) (targetFrame - (16 * i));
+                var colorT = new Color32(255, (byte) (100 + 50 * i), (byte) (64 * i), 255);
+                OverlayUtil.RenderCircle(cameraInfo, _GetFrame(targetF), colorT, 1.5f * (1 - .25f * i));
+            }
+
+            human.GetSmoothPosition(_pid, out var pos, out var rot);
+            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
+
+            var lookDir0 = positioning.angle.ToDisplacement(20);
+            var lookPos0 = positioning.position.Move(lookDir0);
+            OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos0, Color.blue);
+
+            var lookPos1 = GetSmoothLookPos();
+            var lookDir1 = positioning.position.DisplacementTo(lookPos1);
+            OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos1, Color.red);
+
+            if (lookDir1.Distance > .1f) {
+                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
+                var lookPos = positioning.position.Move(lookDir);
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, Color.blue + Color.red);
+            }
+        }
+
+        public Position GetSmoothLookPos()
+        {
+            ref var human = ref GetCitizenInstance();
+            uint targetFrame = GetTargetFrame();
+            Position pos1 = _GetFrame(targetFrame - 1 * 16U);
+            Position pos2 = _GetFrame(targetFrame - 0 * 16U);
+            float t = ((targetFrame & 15U) + SimulationManager.instance.m_referenceTimer) * 0.0625f;
+            return Position.Lerp(pos1, pos2, t);
+        }
+        #endregion
+
         public Positioning GetPositioning()
         {
-            GetCitizenInstance().GetSmoothPosition(pedestrianID._index,
-                                        out var position, out var rotation);
+            ref var human = ref GetCitizenInstance();
+            human.GetSmoothPosition(_pid, out var position, out var rotation);
             var positioning = new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
 
-            var look = GetSmoothLookPos();
-            var lookDir = positioning.position.DisplacementTo(look);
-            if (lookDir.Distance > .1f) {
-                positioning.angle = Angle.Lerp(positioning.angle, lookDir.AsLookingAngle(), 0.9f);
+            var lookPos1 = GetSmoothLookPos();
+            var lookDir1 = positioning.position.DisplacementTo(lookPos1);
+            if (lookDir1.Distance > .1f) {
+                var lookDir0 = positioning.angle.ToDisplacement(1);
+                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
+                positioning.angle = lookDir.AsLookingAngle();
             }
             return positioning;
         }
@@ -158,9 +170,9 @@ namespace CSkyL.Game.Object
         {
             pedestrianID = pid;
             _frames = new Position[4];
-            ref var citizenInstance = ref _GetCitizenInstance(pid);
+            ref var human = ref _GetCitizenInstance(pid);
             for (int i = 0; i < 4; ++i) {
-                _frames[i] = Position._FromVec(citizenInstance.m_targetPos);
+                _frames[i] = Position._FromVec(human.m_targetPos);
             }
         }
 
