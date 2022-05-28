@@ -154,6 +154,9 @@
 
         private static float _ToYaw(float angle) => angle.Modulus(rangeDegree);
         private static float _ToPitch(float angle) => angle.Clamp(rangePitch);
+
+        public Displacement ToDisplacement(float lenght) =>
+            Displacement._FromVec3(_AsQuat * Vector.forward * lenght);
     }
     public class DeltaAttitude
     {

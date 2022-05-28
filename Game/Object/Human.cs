@@ -2,6 +2,7 @@ namespace CSkyL.Game.Object
 {
     using CSkyL.Game.ID;
     using CSkyL.Transform;
+    using CSkyL.UI;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -38,20 +39,68 @@ namespace CSkyL.Game.Object
         public bool IsEnteringVehicle => _Is(CitizenInstance.Flags.EnteringVehicle);
         public bool IsHangingAround => _Is(CitizenInstance.Flags.HangAround);
 
+        public void SimulationFrame() {
+            ref var citizenInstance = ref GetCitizenInstance();
+            _frames[citizenInstance.m_lastFrame] = Position._FromVec(citizenInstance.m_targetPos);
+        }
+        public void RenderOverlay(RenderManager.CameraInfo cameraInfo) {
+            ref var citizenInstance = ref GetCitizenInstance();
+            uint targetFrame = GetTargetFrame();
+
+            for (int i = 0; i < 4; i++) {
+                // target position
+                uint targetF = (uint) (targetFrame - (16 * i));
+                var colorT = new UnityEngine.Color32(255, (byte) (100 + 50 * i), (byte) (64 * i), 255);
+                OverlayUtil.RenderCircle(cameraInfo, _GetFrame(targetF), colorT, 1.5f * (1 - .25f * i));
+            }
+
+            citizenInstance.GetSmoothPosition(_pid, out var pos, out var rot);
+            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
+            var lookPos = GetSmoothLookPos();
+            var lookDir = positioning.position.DisplacementTo(lookPos);
+            if (lookDir.Distance > .1f) {
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red);
+            }
+            else {
+                lookDir = positioning.angle.ToDisplacement(1f);
+                lookPos = positioning.position.Move(lookDir);
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red + UnityEngine.Color.green);
+            }
+        }
+
+        public Position GetSmoothLookPos()
+        {
+            ref var citizenInstance = ref GetCitizenInstance();
+            uint targetFrame = GetTargetFrame();
+            Position pos1 = _GetFrame(targetFrame - 1 * 16U);
+            Position pos2 = _GetFrame(targetFrame - 0 * 16U);
+            float t = ((targetFrame & 15U) + SimulationManager.instance.m_referenceTimer) * 0.0625f;
+            return Position.Lerp(pos1, pos2, t);
+        }
+
         public uint GetTargetFrame()
         {
             uint i = (uint) (((int) id._index << 4) / 65536);
             return SimulationManager.instance.m_referenceFrameIndex - i;
         }
-
-        public void SimulationFrame() { }
-        public void RenderOverlay(RenderManager.CameraInfo cameraInfo) { }
+        private Position _GetFrame(uint simulationFrame)
+        {
+            uint index = simulationFrame >> 4 & 3U;
+            return _frames[index];
+        }
 
         public Positioning GetPositioning()
         {
             GetCitizenInstance().GetSmoothPosition(pedestrianID._index,
                                         out var position, out var rotation);
-            return new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
+            var positioning = new Positioning(Position._FromVec(position), Angle._FromQuat(rotation));
+
+            var look = GetSmoothLookPos();
+            var lookDir = positioning.position.DisplacementTo(look);
+            if (lookDir.Distance > .1f) {
+                positioning.angle = Angle.Lerp(positioning.angle, lookDir.AsLookingAngle(), 0.9f);
+            }
+            return positioning;
         }
         public float GetSpeed() => GetCitizenInstance().GetLastFrameData().m_velocity.magnitude;
         public string GetStatus()
@@ -108,11 +157,18 @@ namespace CSkyL.Game.Object
         private Pedestrian(PedestrianID pid, HumanID hid) : base(hid)
         {
             pedestrianID = pid;
+            _frames = new Position[4];
+            ref var citizenInstance = ref _GetCitizenInstance(pid);
+            for (int i = 0; i < 4; ++i) {
+                _frames[i] = Position._FromVec(citizenInstance.m_targetPos);
+            }
         }
 
         private bool _Is(CitizenInstance.Flags flags) => (GetCitizenInstance().m_flags & flags) != 0;
 
         public readonly PedestrianID pedestrianID;
+        private ushort _pid => pedestrianID._index;
+        private Position[] _frames;
 
         private static readonly CitizenManager manager = CitizenManager.instance;
     }

@@ -13,7 +13,7 @@ namespace CSkyL.Game.Object
         public void SimulationFrame()
         {
             ref var vehicle = ref GetVehicle();
-            _frames[vehicle.m_lastFrame] = Position._FromVec(vehicle.GetTargetPos(3));
+            _frames[vehicle.m_lastFrame] = Position._FromVec(vehicle.m_targetPos2);
         }
 
         public void RenderOverlay(RenderManager.CameraInfo cameraInfo)
@@ -29,16 +29,26 @@ namespace CSkyL.Game.Object
                 OverlayUtil.RenderCircle(cameraInfo, _GetFrame(targetF), colorT, hs.x * (1 - .25f * i));
             }
 
-            vehicle.GetSmoothPosition(_vid, out var pos0, out var rot0);
+            vehicle.GetSmoothPosition(_vid, out var pos, out var rot);
+            Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot)); 
             var lookPos = GetSmoothLookPos();
-            OverlayUtil.RenderArrow(cameraInfo, Position._FromVec(pos0), lookPos, UnityEngine.Color.red);
+            var lookDir = positioning.position.DisplacementTo(lookPos);
+            if (lookDir.Distance > .3f) {
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red);
+            }
+            else {
+                lookDir = positioning.angle.ToDisplacement(1f);
+                lookPos = positioning.position.Move(lookDir);
+                OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, UnityEngine.Color.red + UnityEngine.Color.green);
+            }
+
         }
 
         public Position GetSmoothLookPos()
         {
             ref var vehicle = ref GetVehicle();
             uint targetFrame = vehicle.GetTargetFrame(vehicle.Info, _vid);
-            Position pos1 = _GetFrame(targetFrame - 2 * 16U);
+            Position pos1 = _GetFrame(targetFrame - 1 * 16U);
             Position pos2 = _GetFrame(targetFrame - 0 * 16U);
             float t = ((targetFrame & 15U) + SimulationManager.instance.m_referenceTimer) * 0.0625f;
             return Position.Lerp(pos1, pos2, t);
@@ -57,9 +67,11 @@ namespace CSkyL.Game.Object
             vehicle.GetSmoothPosition(_vid, out var pos, out var rot);
             Positioning positioning = new Positioning(Position._FromVec(pos), Angle._FromQuat(rot));
             
-            var look = GetSmoothLookPos();
-            var lookAngle = positioning.position.DisplacementTo(look).AsLookingAngle();
-            positioning.angle = Angle.Lerp(positioning.angle, lookAngle, 0.9f);
+            var lookPos = GetSmoothLookPos();
+            var lookDir = positioning.position.DisplacementTo(lookPos);
+            if (lookDir.Distance > .3f) {
+                positioning.angle = Angle.Lerp(positioning.angle, lookDir.AsLookingAngle(), 0.9f);
+            }
             return positioning;
         }
 
@@ -183,7 +195,7 @@ namespace CSkyL.Game.Object
             _frames = new Position[4];
             ref var vehicle = ref _GetVehicle(id);
             for (int i = 0; i < 4; ++i) {
-                _frames[i] = Position._FromVec(vehicle.GetTargetPos(i));
+                _frames[i] = Position._FromVec(vehicle.m_targetPos2);
             }
         }
         private static ref global::Vehicle _GetVehicle(VehicleID id)
