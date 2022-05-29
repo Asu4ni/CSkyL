@@ -1,5 +1,6 @@
 ﻿namespace CSkyL.Transform
 {
+    using UnityEngine;
     using Quaternion = UnityEngine.Quaternion;
     using Range = Math.Range;
     using Vector = UnityEngine.Vector3;
@@ -161,6 +162,13 @@
 
         public Displacement ToDisplacement(float lenght) =>
             Displacement._FromVec3(_AsQuat * Vector.forward * lenght);
+
+        public static Angle Lerp(Angle a, Angle b, float t)
+        {
+            return new Angle(
+                yawDegree: Mathf.LerpAngle(a.yawDegree, b.yawDegree, t),
+                pitchDegree: Mathf.LerpAngle(a.pitchDegree, b.pitchDegree, t));
+        }
     }
     public class DeltaAttitude
     {

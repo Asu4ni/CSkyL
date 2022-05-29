@@ -49,7 +49,8 @@ namespace CSkyL.Game.Object
             OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos1, Color.red);
 
             if (lookDir1.Distance > .3f) {
-                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
+                Angle angle = Angle.Lerp(positioning.angle, lookDir1.AsLookingAngle(), .9f);
+                var lookDir = angle.ToDisplacement(20);
                 var lookPos = positioning.position.Move(lookDir);
                 OverlayUtil.RenderArrow(cameraInfo, positioning.position, lookPos, Color.blue + Color.red);
             }
@@ -75,9 +76,7 @@ namespace CSkyL.Game.Object
             var lookPos1 = GetSmoothLookPos();
             var lookDir1 = positioning.position.DisplacementTo(lookPos1);
             if (lookDir1.Distance > .3f) {
-                var lookDir0 = positioning.angle.ToDisplacement(1);
-                var lookDir = Displacement.Lerp(lookDir0, lookDir1, .9f);
-                positioning.angle = lookDir.AsLookingAngle();
+                positioning.angle = Angle.Lerp(positioning.angle, lookDir1.AsLookingAngle(), .9f);
             }
             return positioning;
         }
