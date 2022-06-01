@@ -37,6 +37,15 @@ namespace CSkyL.Game.Object
 
         public bool IsEnteringVehicle => _Is(CitizenInstance.Flags.EnteringVehicle);
         public bool IsHangingAround => _Is(CitizenInstance.Flags.HangAround);
+        
+        public Position GetTargetPos(int index) => Position._FromVec(GetCitizenInstance().m_targetPos);
+        public byte GetLastFrame() => GetCitizenInstance().m_lastFrame;
+        public uint GetTargetFrame()
+        {
+            // see decompiler CitizenInstance.GetSmoothPosition()
+            uint i = (uint)(_pid >> 12); // = (_pid << 4 ) *65536
+            return SimulationManager.instance.m_referenceFrameIndex - i;
+        }
 
         public Positioning GetPositioning()
         {

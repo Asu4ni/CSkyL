@@ -9,6 +9,14 @@ namespace CSkyL.Game.Object
     {
         public override string Name => manager.GetVehicleName(GetHeadVehicleID()._index);
 
+        public Position GetTargetPos(int index) => Position._FromVec(GetVehicle().GetTargetPos(index));
+        public byte GetLastFrame() => GetVehicle().m_lastFrame;
+        public uint GetTargetFrame()
+        {
+            ref var vehicle = ref GetVehicle();
+            return vehicle.GetTargetFrame(vehicle.Info, _vid);
+        }
+
         public Positioning GetPositioning()
         {
             ref var vehicle = ref GetVehicle();
