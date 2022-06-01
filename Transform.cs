@@ -160,15 +160,11 @@
         private static float _ToYaw(float angle) => angle.Modulus(rangeDegree);
         private static float _ToPitch(float angle) => angle.Clamp(rangePitch);
 
-        public Displacement ToDisplacement(float lenght) =>
-            Displacement._FromVec3(_AsQuat * Vector.forward * lenght);
+        public Displacement ToDisplacement(float length) =>
+            Displacement._FromVec3(_AsQuat * Vector.forward * length);
 
-        public static Angle Lerp(Angle a, Angle b, float t)
-        {
-            return new Angle(
-                yawDegree: Mathf.LerpAngle(a.yawDegree, b.yawDegree, t),
-                pitchDegree: Mathf.LerpAngle(a.pitchDegree, b.pitchDegree, t));
-        }
+        public static Angle Lerp(Angle a, Angle b, float t) =>
+            _FromQuat(Quaternion.Slerp(a._AsQuat, b._AsQuat, t));
     }
     public class DeltaAttitude
     {

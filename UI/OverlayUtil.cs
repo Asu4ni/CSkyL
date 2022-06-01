@@ -1,7 +1,8 @@
-﻿using ColossalFramework.Math;
-using CSkyL.Transform;
-namespace CSkyL.UI
+﻿namespace CSkyL.UI
 {
+    using ColossalFramework.Math;
+    using CSkyL.Transform;
+
     public static class OverlayUtil
     {
         public static void RenderArrow(
