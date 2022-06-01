@@ -13,8 +13,9 @@
     <FileAlignment>512</FileAlignment>
     <AssemblySearchPaths>
       $(AssemblySearchPaths);
+      {HintPathFromItem};
       C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\;
-      ..\..\..\..\..\SteamLibrary\steamapps\common\Cities_Skylines\Cities_Data\Managed\
+      ..\..\..\..\..\SteamLibrary\steamapps\common\Cities_Skylines\Cities_Data\Managed\;
     </AssemblySearchPaths>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -36,6 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp"/>
+    <Reference Include="Assembly-CSharp-firstpass"/>
     <Reference Include="CitiesHarmony.API, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\FPSCamera\packages\CitiesHarmony.API.2.1.0\lib\net35\CitiesHarmony.API.dll</HintPath>
     </Reference>
