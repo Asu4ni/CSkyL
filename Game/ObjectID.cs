@@ -22,9 +22,8 @@ namespace CSkyL.Game.ID
         protected ObjectID(InstanceID id) { _iID = id; }
 
         public override bool Equals(object rhs)
-        {
-            return rhs is ObjectID objectID && objectID._iID == this._iID;
-        }
+            => rhs is ObjectID objectID && objectID._iID == this._iID;
+        public override int GetHashCode() => _iID.GetHashCode();
     }
 
     public abstract class BaseID<T> : ObjectID where T : struct, System.IComparable<T>
